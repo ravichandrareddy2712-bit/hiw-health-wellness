@@ -1,0 +1,36 @@
+HIW: Launch Safety Audit (Dev-Only Features)
+===========================================
+Date: 2026-02-09
+Purpose: Identify features that must be isolated or disabled for the public release to prevent accidental data wipes or "unbalanced" user experiences.
+
+[1] DEVELOPMENT COMMANDS (In Chatbots)
+--------------------------------------
+The following commands are currently active in any chat input (IGRIS or Mood Support):
+• /clean  - Wipes all chat databases and resets daily limits.
+• /reset  - Resets daily limits without wiping history.
+• /streak - Seeds 10 days of test data into the user's history.
+• /max    - Sets all avatar stats (Health, Energy, Stamina) to 100%.
+• /mid    - Sets all avatar stats to 50%.
+• /min    - Sets all avatar stats to 0% (Emergency Mode).
+
+[2] DEVELOPMENT SCREENS & NAVIGATION
+------------------------------------
+The following screens are for testing and internal roadmaps only:
+• update_log_screen.dart - Full roadmap and Tester Toolkit.
+• tester_code_screen.dart - Dedicated dev testing area.
+• Avatar Screen -> "View Update Log" button.
+• Main Shell -> "Update Log Prompt Overlay" (One-time popup).
+
+[3] TEST BUTTONS & TOOLS
+------------------------
+• Profile Screen -> "Test Mood Notification" button.
+• Avatar Screen -> DevThemeTools (Floating tools for atmosphere testing).
+
+[4] ISOLATION STRATEGY
+----------------------
+To ensure the public launch is safe:
+1. Wrap all commands in an 'if (kDebugMode)' or 'if (isTester)' check.
+2. Hide 'View Update Log' and 'DevThemeTools' behind a secret long-press on the app version number.
+3. Use a 'TESTER_MODE' flag in SharedPreferences to toggle visibility for authorized testers.
+
+ACTION: Do NOT implement the Update Log Prompt for public users. It should only trigger if kDebugMode is true or if a tester flag is active.

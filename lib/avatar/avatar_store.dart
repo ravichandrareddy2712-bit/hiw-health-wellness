@@ -1,0 +1,219 @@
+import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
+import '../hive/avatar_hive_model.dart';
+
+class AvatarStore extends ChangeNotifier {
+  // -------------------------
+  // SINGLETON (IMPORTANT)
+  // -------------------------
+  static final AvatarStore _instance = AvatarStore._internal();
+  factory AvatarStore() => _instance;
+
+  AvatarStore._internal() {
+    _avatarBox = Hive.box<AvatarHive>('avatarBox');
+    _metaBox = Hive.box('avatarMetaBox');
+
+    if (!_avatarBox.containsKey(_avatarKey)) {
+      _avatarBox.put(
+        _avatarKey,
+        AvatarHive(health: 0, energy: 0, stamina: 0),
+      );
+    }
+
+    _ensureWeek();
+    _ensureTodayStamina();
+  }
+
+  // -------------------------
+  // BOXES
+  // -------------------------
+  late final Box<AvatarHive> _avatarBox;
+  late final Box _metaBox;
+
+  // -------------------------
+  // KEYS
+  // -------------------------
+  static const String _avatarKey = 'avatar';
+  static const String _weekKey = 'weekId';
+  static const String _weeklyJunkKey = 'weeklyJunkCount';
+  static const String _dailyStaminaPreviewKey = 'dailyStaminaPreview';
+  static const String _dailyStaminaDateKey = 'dailyStaminaDate';
+
+  // -------------------------
+  // LIMITS
+  // -------------------------
+  static const double maxHealth = 100.0;
+  static const double maxEnergy = 100.0;
+  static const double maxStamina = 100.0;
+  static const double waterStaminaIncrement = 1.0;
+
+  // =====================================================
+  // LEGACY METHODS (REQUIRED – DO NOT REMOVE)
+  // =====================================================
+  Future<void> init() async {
+    // kept only so old calls don't crash
+  }
+
+  void addDailyRaw({
+    required int healthRaw,
+    required int energyRaw,
+    required int staminaRaw,
+  }) {
+    // deprecated raw system – no-op
+  }
+
+  static const String _lastEnergyBonusDateKey = 'lastEnergyBonusDate';
+
+  // -------------------------
+  // GETTERS
+  // -------------------------
+  AvatarHive get avatar => _avatarBox.get(_avatarKey)!;
+
+  int get weeklyJunkCount =>
+      _metaBox.get(_weeklyJunkKey, defaultValue: 0) as int;
+
+  double get dailyStaminaPreview =>
+      (_metaBox.get(_dailyStaminaPreviewKey) as double?) ??
+      avatar.stamina;
+
+  // -------------------------
+  // APPLY HEALTH + ENERGY
+  // -------------------------
+  void applyHealthEnergy({
+    required double healthDelta,
+    required double energyBase,
+    required double energyBonus,
+    required bool isBonusEligible,
+    required bool junkConsumed,
+  }) {
+    final a = avatar;
+
+    // 1️⃣ ALWAYS APPLY HEALTH
+    a.health = (a.health + healthDelta).clamp(0.0, maxHealth);
+
+    // 2️⃣ ALWAYS APPLY BASE ENERGY (Meal Reward)
+    double totalEnergyDelta = energyBase;
+
+    // 3️⃣ CHECK DAILY BONUS (One Time Per Day)
+    if (isBonusEligible) {
+      final today = _todayKey();
+      final lastBonusDate = _metaBox.get(_lastEnergyBonusDateKey);
+
+      if (lastBonusDate != today) {
+        // Did not apply bonus today yet -> Apply it!
+        totalEnergyDelta += energyBonus;
+        _metaBox.put(_lastEnergyBonusDateKey, today);
+      }
+    }
+
+    // 4️⃣ APPLY TOTAL ENERGY
+    a.energy = (a.energy + totalEnergyDelta).clamp(0.0, maxEnergy);
+
+    a.save();
+
+    if (junkConsumed) {
+      _metaBox.put(_weeklyJunkKey, weeklyJunkCount + 1);
+    }
+    
+    // 🔔 NOTIFY UI
+    notifyListeners(); 
+  }
+
+  // -------------------------
+  // 💧 WATER → STAMINA
+  // -------------------------
+  void addStaminaFromWater() {
+    _ensureTodayStamina();
+
+    final double updated =
+        (dailyStaminaPreview + waterStaminaIncrement)
+            .clamp(0.0, maxStamina)
+            .toDouble();
+
+    _metaBox.put(_dailyStaminaPreviewKey, updated);
+
+    final a = avatar;
+    a.stamina = updated;
+    a.save();
+
+    // 🔔 NOTIFY UI
+    notifyListeners();
+  }
+
+  void setStat(String type, double value) {
+    final a = avatar;
+    final clampedValue = value.clamp(0.0, 100.0);
+    
+    if (type.toUpperCase() == 'H') {
+      a.health = clampedValue;
+    } else if (type.toUpperCase() == 'E') {
+      a.energy = clampedValue;
+    } else if (type.toUpperCase() == 'S') {
+      a.stamina = clampedValue;
+      _metaBox.put(_dailyStaminaPreviewKey, a.stamina);
+    }
+    
+    a.save();
+    notifyListeners();
+  }
+
+  void addStats({double? h, double? e, double? s}) {
+    final a = avatar;
+    if (h != null) a.health = (a.health + h).clamp(0.0, maxHealth);
+    if (e != null) a.energy = (a.energy + e).clamp(0.0, maxEnergy);
+    if (s != null) {
+      a.stamina = (a.stamina + s).clamp(0.0, maxStamina);
+      _metaBox.put(_dailyStaminaPreviewKey, a.stamina);
+    }
+    a.save();
+    notifyListeners();
+  }
+
+  void hackStats({required double h, required double e, required double s}) {
+    final a = avatar;
+    a.health = h.clamp(0.0, maxHealth);
+    a.energy = e.clamp(0.0, maxEnergy);
+    a.stamina = s.clamp(0.0, maxStamina);
+    a.save();
+    _metaBox.put(_dailyStaminaPreviewKey, a.stamina);
+    notifyListeners();
+  }
+
+  // -------------------------
+  // DAILY RESET
+  // -------------------------
+  void _ensureTodayStamina() {
+    final today = _todayKey();
+    final saved = _metaBox.get(_dailyStaminaDateKey);
+
+    if (saved != today) {
+      _metaBox.put(_dailyStaminaDateKey, today);
+      _metaBox.put(_dailyStaminaPreviewKey, avatar.stamina);
+    }
+  }
+
+  // -------------------------
+  // WEEK RESET
+  // -------------------------
+  void _ensureWeek() {
+    final currentWeek = _currentWeekId();
+    final savedWeek = _metaBox.get(_weekKey);
+
+    if (savedWeek != currentWeek) {
+      _metaBox.put(_weekKey, currentWeek);
+      _metaBox.put(_weeklyJunkKey, 0);
+    }
+  }
+
+  String _todayKey() {
+    final n = DateTime.now();
+    return '${n.year}-${n.month}-${n.day}';
+  }
+
+  String _currentWeekId() {
+    final n = DateTime.now();
+    final sunday =
+        n.subtract(Duration(days: n.weekday % 7));
+    return '${sunday.year}-${sunday.month}-${sunday.day}';
+  }
+}

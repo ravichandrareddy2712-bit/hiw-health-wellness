@@ -1,0 +1,136 @@
+hiw/
+├── .flutter-plugins-dependencies
+├── .gitignore
+├── .metadata
+├── analysis_options.yaml
+├── ChristmasBackground(child
+├── gen_tree.py
+├── git
+├── hiw.iml
+├── pubspec.lock
+├── pubspec.yaml
+├── README.md
+├── assets/
+│   ├── logo.png
+│   ├── tester_codes.txt
+│   ├── christmas/
+│   │   ├── trees.png
+│   ├── ml/
+│   │   ├── food_classifier.tflite
+│   │   ├── labels.txt
+│   ├── new_year/
+│   │   ├── fireworks.png
+│   │   ├── new_year_bg.jpg
+│   ├── sankranti/
+│   │   ├── kites.png
+│   │   ├── sankranti_bg.jpg
+├── lib/
+│   ├── main.dart
+│   ├── auth/
+│   │   ├── intro_screen.dart
+│   │   ├── login_screen.dart
+│   │   ├── otp_screen.dart
+│   │   ├── register_screen.dart
+│   │   ├── username_screen.dart
+│   │   ├── user_info_screen.dart
+│   ├── avatar/
+│   │   ├── avatar_logic.dart
+│   │   ├── avatar_store.dart
+│   ├── config/
+│   │   ├── ai_config.dart
+│   ├── core/
+│   │   ├── addon_nutrition_rules.dart
+│   │   ├── app_state.dart
+│   │   ├── food_addons_config.dart
+│   │   ├── food_item.dart
+│   │   ├── food_nutrition_base.dart
+│   │   ├── generic_nutrition_engine.dart
+│   │   ├── health_engine.dart
+│   │   ├── history_store.dart
+│   │   ├── hive_service.dart
+│   │   ├── nutrition_store.dart
+│   │   ├── water_store.dart
+│   ├── dev/
+│   │   ├── admin_commands.dart
+│   │   ├── admin_reset.dart
+│   │   ├── dev_config.dart
+│   ├── events/
+│   │   ├── event_manager.dart
+│   │   ├── christmas/
+│   │   │   ├── christmas_background.dart
+│   │   │   ├── christmas_config.dart
+│   │   │   ├── christmas_glass_card.dart
+│   │   │   ├── falling_snow.dart
+│   │   │   ├── Newyear/
+│   │   ├── new_year/
+│   │   │   ├── fireworks_animation.dart
+│   │   │   ├── new_year_background.dart
+│   │   ├── sankranti/
+│   │   │   ├── falling_kites.dart
+│   │   │   ├── sankranti_background.dart
+│   ├── hive/
+│   │   ├── avatar_hive_model.dart
+│   │   ├── avatar_hive_model.g.dart
+│   │   ├── chat_hive_model.dart
+│   │   ├── chat_hive_model.g.dart
+│   │   ├── food_hive_model.dart
+│   │   ├── food_hive_model.g.dart
+│   │   ├── history_hive_model.dart
+│   │   ├── history_hive_model.g.dart
+│   │   ├── hive_init.dart
+│   │   ├── water_hive_model.dart
+│   │   ├── water_hive_model.g.dart
+│   ├── ml/
+│   │   ├── food_ml_service.dart
+│   ├── screens/
+│   │   ├── app_gate.dart
+│   │   ├── avatar_screen.dart
+│   │   ├── chatbot_screen.dart
+│   │   ├── daily_quest_screen.dart
+│   │   ├── dosa_addons_screen.dart
+│   │   ├── food_screen.dart
+│   │   ├── generic_addons_screen.dart
+│   │   ├── history_screen.dart
+│   │   ├── home_screen.dart
+│   │   ├── monthly_history_screen.dart
+│   │   ├── profile_screen.dart
+│   │   ├── protein_history_screen.dart
+│   │   ├── purchases_screen.dart
+│   │   ├── reminders_screen.dart
+│   │   ├── scanner_screen.dart
+│   │   ├── tester_code_screen.dart
+│   │   ├── weekly_history_screen.dart
+│   │   ├── history/
+│   │   │   ├── buff_debuff_engine.dart
+│   │   │   ├── day_nutrition.dart
+│   │   │   ├── meal_time.dart
+│   │   │   ├── nutrition_models.dart
+│   ├── services/
+│   │   ├── ai_service.dart
+│   │   ├── notification_service.dart
+│   │   ├── user_api.dart
+│   ├── themes/
+│   │   ├── app_theme.dart
+│   ├── utils/
+│   │   ├── calorie_calculator.dart
+│   ├── widgets/
+│   │   ├── bottom_nav.dart
+│   │   ├── glass_button.dart
+│   │   ├── glass_card.dart
+├── Next_Updates/
+├── test/
+│   ├── widget_test.dart
+├── updates/
+│   ├── bmscalculator.txt
+│   ├── update0.0.txt
+│   ├── update0.1.txt
+│   ├── updv0.41
+├── web/
+│   ├── favicon.png
+│   ├── index.html
+│   ├── manifest.json
+│   ├── icons/
+│   │   ├── Icon-192.png
+│   │   ├── Icon-512.png
+│   │   ├── Icon-maskable-192.png
+│   │   ├── Icon-maskable-512.png

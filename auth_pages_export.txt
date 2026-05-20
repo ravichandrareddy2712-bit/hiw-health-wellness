@@ -1,0 +1,605 @@
+================================================================================
+HIW APP - LOGIN & REGISTER PAGES CODE EXPORT
+================================================================================
+
+This file contains all the authentication pages and main.dart code for the HIW app.
+Use this to ask Kimi or other AI for login/register animation suggestions.
+
+================================================================================
+FILE 1: LOGIN SCREEN (lib/auth/login_screen.dart)
+================================================================================
+
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import '../core/app_state.dart';
+import '../core/nutrition_store.dart';
+import '../main.dart';
+import '../services/user_api.dart';
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({Key? key}) : super(key: key);
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  bool isLoading = false;
+  bool _isObscured = true; // 👁️ State for password visibility
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0F2027),
+              Color(0xFF203A43),
+              Color(0xFF2C5364),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Login',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        _glassTextField(
+                          controller: _emailCtrl,
+                          hint: 'Email',
+                          icon: Icons.email,
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Password Field with Toggle
+                        TextField(
+                          controller: _passCtrl,
+                          obscureText: _isObscured,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'Password',
+                            hintStyle: const TextStyle(color: Colors.white70),
+                            prefixIcon: const Icon(Icons.lock, color: Colors.white70),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isObscured ? Icons.visibility_off : Icons.visibility,
+                                color: Colors.white70,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _isObscured = !_isObscured;
+                                });
+                              },
+                            ),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.15),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white.withOpacity(0.9),
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: isLoading ? null : _login,
+                            child: isLoading
+                                ? const CircularProgressIndicator()
+                                : const Text(
+                                    'LOGIN',
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _login() async {
+    setState(() => isLoading = true);
+
+    try {
+      final email = _emailCtrl.text.trim().toLowerCase();
+      final password = _passCtrl.text.trim();
+
+      if (email.isEmpty || password.isEmpty) throw Exception("Empty fields");
+
+      // ☁️ BACKEND CHECK
+      final userData = await UserApi.login(email: email, password: password);
+      
+      // ✅ SUCCESS
+      final username = userData['username'] ?? 'User';
+      final targetCalories = userData['targetCalories'] ?? 2000;
+
+      // Save Flags
+      await AppState.setLoggedIn(true);
+      await AppState.setUserInfoDone(true);
+      await AppState.setUsername(username);
+      await AppState.setEmail(email);
+
+      // ✅ SAVE TO HIVE FOR APP LOGIC
+      NutritionStore().setDailyTargetCalories(targetCalories);
+      
+      // 🚀 GO TO HOME
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const AppGate()),
+        (_) => false,
+      );
+
+    } catch (e) {
+      debugPrint("Login fail: $e");
+      final errorMsg = e.toString().replaceAll("Exception:", "").trim();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: $errorMsg"),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  Widget _glassTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool isPassword = false,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: isPassword,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white70),
+        prefixIcon: Icon(icon, color: Colors.white70),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.15),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+}
+
+
+================================================================================
+FILE 2: REGISTER SCREEN (lib/auth/register_screen.dart)
+================================================================================
+
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'otp_screen.dart';
+
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({Key? key}) : super(key: key);
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0F2027),
+              Color(0xFF203A43),
+              Color(0xFF2C5364),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Register',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        _glassTextField(
+                          controller: _emailCtrl,
+                          hint: 'Email',
+                          icon: Icons.email,
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        _glassTextField(
+                          controller: _passCtrl,
+                          hint: 'Password',
+                          icon: Icons.lock,
+                          isPassword: true,
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white.withOpacity(0.9),
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () {
+                              if (_emailCtrl.text.isEmpty || _passCtrl.text.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("Please fill all fields")),
+                                );
+                                return;
+                              }
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => OtpScreen(
+                                    email: _emailCtrl.text.trim().toLowerCase(),
+                                    password: _passCtrl.text,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'SEND OTP',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _glassTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool isPassword = false,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: isPassword,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white70),
+        prefixIcon: Icon(icon, color: Colors.white70),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.15),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+}
+
+
+================================================================================
+FILE 3: MAIN.DART (lib/main.dart) - PARTIAL (AUTH-RELATED SECTIONS)
+================================================================================
+
+import 'dart:ui';
+import 'package:flutter/material.dart';
+
+// theme
+import 'themes/app_theme.dart';
+
+// screens
+import 'screens/chatbot_screen.dart';
+import 'screens/food_screen.dart';
+import 'screens/scanner_screen.dart';
+import 'screens/history_screen.dart';
+import 'screens/avatar_screen.dart';
+import 'screens/tester_code_screen.dart';
+
+// auth
+import 'auth/intro_screen.dart';
+import 'auth/login_screen.dart';
+import 'auth/user_info_screen.dart';
+
+// widgets
+import 'widgets/bottom_nav.dart';
+
+// events
+import 'events/christmas/christmas_background.dart';
+import 'events/christmas/christmas_config.dart';
+
+// hive
+import 'hive/hive_init.dart';
+
+// stores
+import 'core/nutrition_store.dart';
+import 'avatar/avatar_store.dart';
+import 'core/app_state.dart';
+import 'core/food_addons_config.dart';
+
+// services
+import 'services/notification_service.dart';
+
+// events manager
+import 'events/event_manager.dart';
+import 'core/theme_manager.dart';
+
+final themeManager = ThemeManager(); // Singleton
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initHive();
+  NutritionStore();
+  await NotificationService().init();
+  runApp(const HIWApp());
+}
+
+class HIWApp extends StatelessWidget {
+  const HIWApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: themeManager,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'HIW – Health Is Wealth',
+          debugShowCheckedModeBanner: false,
+          theme: themeManager.currentThemeData,
+          home: const AppGate(),
+        );
+      },
+    );
+  }
+}
+
+/// APP GATE - AUTHENTICATION FLOW
+class AppGate extends StatefulWidget {
+  const AppGate({super.key});
+
+  @override
+  State<AppGate> createState() => _AppGateState();
+}
+
+class _AppGateState extends State<AppGate> {
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Widget>(
+      future: _decide(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return snapshot.data!;
+      },
+    );
+  }
+
+  Future<Widget> _decide() async {
+    final loggedIn = await AppState.isLoggedIn();
+    final hasUserInfo = await AppState.hasUserInfo();
+    final nutritionStore = NutritionStore();
+
+    // Fresh user → Intro
+    if (!loggedIn) {
+      return const IntroScreen();
+    }
+
+    // Logged in but onboarding not done -> Force re-login
+    if (!hasUserInfo) {
+      return const LoginScreen();
+    }
+
+    // Ready but not tester-verified
+    final verified = await AppState.isTesterVerified();
+    if (!verified) {
+      return TesterCodeScreen(
+        onVerified: () => setState(() {}),
+      );
+    }
+
+    // Fully ready user
+    return const MainShell();
+  }
+}
+
+// ... rest of main.dart continues with MainShell widget ...
+
+
+================================================================================
+ANIMATION SUGGESTIONS FOR KIMI AI
+================================================================================
+
+CURRENT DESIGN ANALYSIS:
+- Dark gradient background (deep blue-teal tones: #0F2027, #203A43, #2C5364)
+- Glassmorphism UI (frosted glass effect with blur)
+- White text with semi-transparent containers
+- Clean, modern, minimalist aesthetic
+- Health & wellness app theme
+
+RECOMMENDED ANIMATIONS:
+
+1. **ENTRANCE ANIMATIONS** (When screen loads):
+   - Fade in + scale up the glass card (from 0.8 to 1.0 scale)
+   - Staggered fade-in for form fields (email appears first, then password)
+   - Subtle glow pulse effect on the card border
+   - Gradient background slow shift/rotation
+
+2. **INPUT FIELD ANIMATIONS**:
+   - Smooth focus animations with border glow
+   - Floating label animation (hint text moves up when typing)
+   - Ripple effect on tap
+   - Subtle shake animation on validation error
+   - Icon color transition on focus (white70 → white)
+
+3. **BUTTON ANIMATIONS**:
+   - Hover/press scale effect (0.95 scale on press)
+   - Ripple effect from tap point
+   - Loading state: smooth circular progress with fade transition
+   - Success animation: checkmark with scale + fade
+   - Shimmer effect on button surface
+
+4. **PASSWORD VISIBILITY TOGGLE**:
+   - Smooth rotation animation for eye icon (180° flip)
+   - Cross-fade between visibility_off and visibility icons
+   - Subtle bounce on toggle
+
+5. **BACKGROUND ENHANCEMENTS**:
+   - Animated gradient (slow color shift)
+   - Floating particles/bubbles (health theme: water droplets, leaves, or energy orbs)
+   - Parallax effect on scroll
+   - Subtle wave animation at bottom
+
+6. **TRANSITION ANIMATIONS**:
+   - Hero animation for logo/title when navigating
+   - Slide transition between login/register screens
+   - Fade + slide for error messages
+   - Page route transitions with blur effect
+
+7. **MICRO-INTERACTIONS**:
+   - Text field cursor blink with custom color
+   - Haptic feedback on button press
+   - Success confetti/particle burst on login
+   - Error shake with red glow pulse
+
+8. **PREMIUM TOUCHES**:
+   - Glassmorphism depth effect (layered glass cards)
+   - Ambient light effect following cursor/touch
+   - Smooth keyboard appearance animation
+   - Status bar color transition
+
+SUGGESTED PROMPT FOR KIMI:
+
+"Create smooth, premium animations for a health & wellness app login/register screen with glassmorphism design. The background is a dark blue-teal gradient (#0F2027 to #2C5364) with frosted glass cards. I need:
+
+1. Card entrance: fade + scale with border glow pulse
+2. Staggered input field animations with focus glow
+3. Button press animations with ripple and loading states
+4. Password toggle with smooth icon rotation
+5. Background: animated gradient with floating health-themed particles
+6. Error shake animation with red glow
+7. Success animation with particle effects
+8. All animations should be smooth (300-500ms) and feel premium
+
+Use Flutter's implicit/explicit animations, AnimatedContainer, and custom animation controllers. Keep it performant and battery-friendly."
+
+
+================================================================================
+DESIGN NOTES:
+================================================================================
+
+- Current gradient colors: #0F2027, #203A43, #2C5364 (dark blue-teal)
+- Glass effect: BackdropFilter with blur(12, 12) and white opacity 0.15
+- Border radius: 20px for cards, 12px for inputs/buttons
+- Text color: White with 70% opacity for hints
+- Button: White background (0.9 opacity) with black text
+- Overall vibe: Clean, modern, health-focused, premium
+
+BEST ANIMATION LIBRARIES FOR FLUTTER:
+- flutter_animate (easy declarative animations)
+- rive (complex vector animations)
+- lottie (JSON-based animations)
+- Built-in Flutter animations (AnimationController, Tween, etc.)
+
+================================================================================
+END OF EXPORT
+================================================================================
